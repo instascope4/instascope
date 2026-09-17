@@ -14,10 +14,15 @@ import { LoggerModule } from 'nestjs-pino';
 @Module({
   imports: [
     BullModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
+      // REDIS_URL (docker: redis://redis:6379) — yoksa localhost
+      connection: (() => {
+        const u = new URL(process.env.REDIS_URL || 'redis://localhost:6379');
+        return {
+          host: u.hostname,
+          port: Number(u.port) || 6379,
+          password: u.password || undefined,
+        };
+      })(),
     }),
 
     // Sadece genel default limiti bırakıyoruz

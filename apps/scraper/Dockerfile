@@ -7,6 +7,8 @@ COPY pyproject.toml ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir . && mkdir -p /app/logs /data && chown -R appuser:appuser /app /data
 ENV PYTHONUNBUFFERED=1 INSTAGRAM_SESSION_FILE=/data/instaloader-session LOG_FILE=/app/logs/scraper.log
+# session dosyaları (.instaloader-<user>) CWD'ye göre okunur -> /data volume
+WORKDIR /data
 USER appuser
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD curl -f http://localhost:8001/health || exit 1
