@@ -1,0 +1,14 @@
+# Hassas / kişisel dosyalar — Instagram oturum bilgileri
+.env
+.instaloader-*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Loglar
+logs/
+create_session.py
+data/real_data_pool.json

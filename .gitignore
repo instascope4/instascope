@@ -8,3 +8,14 @@ node_modules/
 .output/
 .cache/
 dist/
+
+# deploy cleanup
+**/node_modules/
+**/__pycache__/
+**/.DS_Store
+**/coverage*/
+**/*.tsbuildinfo
+cookies.txt
+apps/scraper/logs/
+apps/scraper/.instaloader-session*
+!.env.example

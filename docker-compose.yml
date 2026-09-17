@@ -1,13 +1,133 @@
+# InstaScope – production (robiapp.online / Traefik)
+#   web  -> https://${WEB_HOST}
+#   api  -> https://${API_HOST}   (swagger: /docs)
+#   ai, scraper, postgres, redis -> sadece iç ağ
+x-common: &common
+  restart: unless-stopped
+  logging: { driver: json-file, options: { max-size: "20m", max-file: "3" } }
+
 services:
+  postgres:
+    <<: *common
+    image: postgres:16-alpine
+    container_name: instascope-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   redis:
-    image: redis:alpine
-    container_name: instascope_redis
-    ports:
-      - "6379:6379"
-    restart: always
+    <<: *common
+    image: redis:7-alpine
+    container_name: instascope-redis
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    <<: *common
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: instascope-api
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      TOKEN_ENCRYPTION_MASTER_KEY: ${TOKEN_ENCRYPTION_MASTER_KEY}
+      PSEUDONYM_SECRET_KEY: ${PSEUDONYM_SECRET_KEY}
+      INTERNAL_SECRET_TOKEN: ${INTERNAL_SECRET_TOKEN}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      FRONTEND_URL: https://${WEB_HOST}
+      AI_SERVICE_URL: http://ai:8000
+      SCRAPER_SERVICE_URL: http://scraper:8001
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [internal, web]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.instascope-api.rule=Host(`${API_HOST}`)
+      - traefik.http.routers.instascope-api.entrypoints=websecure
+      - traefik.http.routers.instascope-api.tls.certresolver=le
+      - traefik.http.services.instascope-api.loadbalancer.server.port=8000
+
+  ai:
+    <<: *common
+    build:
+      context: ./apps/ai
+    container_name: instascope-ai
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      INTERNAL_SECRET_TOKEN: ${INTERNAL_SECRET_TOKEN}
+    volumes:
+      - hf_cache:/app/.cache/huggingface
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [internal]
+    deploy:
+      resources:
+        limits: { memory: 3g }
+
+  scraper:
+    <<: *common
+    build:
+      context: ./apps/scraper
+    container_name: instascope-scraper
+    environment:
+      INSTAGRAM_USER: ${INSTAGRAM_USER}
+      INSTAGRAM_PASSWORD: ${INSTAGRAM_PASSWORD}
+      INSTAGRAM_ACCOUNTS: ${INSTAGRAM_ACCOUNTS}
+    volumes:
+      - scraper_data:/data
+    networks: [internal]
+
+  web:
+    <<: *common
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: https://${API_HOST}
+        NUXT_PUBLIC_USE_MOCK: "false"
+    container_name: instascope-web
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: https://${API_HOST}
+      NUXT_PUBLIC_USE_MOCK: "false"
+    depends_on: [api]
+    networks: [web]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.instascope-web.rule=Host(`${WEB_HOST}`)
+      - traefik.http.routers.instascope-web.entrypoints=websecure
+      - traefik.http.routers.instascope-web.tls.certresolver=le
+      - traefik.http.services.instascope-web.loadbalancer.server.port=3000
 
 volumes:
-  pgdata:
+  postgres_data:
   redis_data:
+  hf_cache:
+  scraper_data:
+
+networks:
+  internal:
+  web:
+    external: true

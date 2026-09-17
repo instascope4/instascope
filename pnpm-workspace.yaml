@@ -1,8 +1,14 @@
-<<<<<<< HEAD
+packages:
+  - 'apps/web'
+  - 'packages/*'
+
 allowBuilds:
   '@nestjs/core': true
-  es5-ext: set this to true or false
-  fsevents: set this to true or false
+  '@parcel/watcher': true
+  esbuild: true
+  unrs-resolver: true
+  es5-ext: false
+  fsevents: false
 
 overrides:
   multer: ">=2.2.0"
@@ -13,12 +19,3 @@ overrides:
   file-type: ">=21.3.2"
   qs: ">=6.15.2"
   body-parser: ">=1.20.6"
-=======
-packages:
-  - 'apps/*'
-  - 'packages/*'
-allowBuilds:
-  '@parcel/watcher': true
-  esbuild: true
-  unrs-resolver: true
->>>>>>> frontend

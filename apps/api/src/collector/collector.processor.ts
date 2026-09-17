@@ -358,7 +358,7 @@ export class CollectorProcessor extends WorkerHost {
         try {
           this.logger.log(`AI hesap analizi tetikleniyor (Account ID: ${account.id})...`);
           await fetch(
-            process.env.AI_SERVICE_URL || 'http://localhost:8000/internal/analyze-account',
+            `${process.env.AI_SERVICE_URL || 'http://localhost:8000'}/internal/analyze-account`,
             {
               method: 'POST',
               headers: { 
@@ -385,7 +385,7 @@ export class CollectorProcessor extends WorkerHost {
           });
 
           if (commentsToAnalyze.length > 0) {
-            const sentimentUrl = process.env.AI_SERVICE_URL_SENTIMENT || 'http://localhost:8000/internal/analyze';
+            const sentimentUrl = process.env.AI_SERVICE_URL_SENTIMENT || `${process.env.AI_SERVICE_URL || 'http://localhost:8000'}/internal/analyze`;
 
             const internalToken = process.env.INTERNAL_SECRET_TOKEN;
             if (!internalToken) {

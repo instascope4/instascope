@@ -1,9 +1,9 @@
 {
   "name": "instascope",
-<<<<<<< HEAD
   "private": true,
   "scripts": {
     "dev": "pnpm --filter api start:dev",
+    "dev:web": "pnpm --filter web dev",
     "seed": "prisma db seed"
   },
   "devDependencies": {
@@ -20,16 +20,3 @@
     "seed": "ts-node prisma/seed.ts"
   }
 }
-=======
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module"
-}
->>>>>>> frontend
