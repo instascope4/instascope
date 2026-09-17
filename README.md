@@ -128,3 +128,19 @@ app deploy instascope    # elle: git pull + build + restart
 
 Canlı ortamda `ADMIN` rollü test hesapları mevcuttur; bilgileri sunucu yöneticisinden alın.
 Yeni kullanıcı: kayıt sayfası veya `POST /auth/register` (`name`, `email`, `password` ≥ 8 karakter).
+
+## Instagram scraper oturumu ekleme
+
+Instagram, sunucu IP'sinden şifreyle girişe izin vermiyor. Oturum tarayıcıdan alınıp sunucuya taşınır:
+
+1. Tarayıcıda instagram.com'a scraper hesabıyla giriş yap.
+2. F12 → Application (Chrome) / Storage (Firefox) → Cookies → `https://www.instagram.com`
+3. `sessionid` (zorunlu), `csrftoken`, `ds_user_id` değerlerini kopyala.
+4. Sunucuda:
+   ```bash
+   cd /srv/apps/instascope
+   scripts/instagram-session.sh <kullanici> <sessionid> [csrftoken] [ds_user_id]
+   scripts/instagram-session.sh list      # mevcut oturumlar
+   ```
+Script oturumu doğrular, `/data` volume'una kaydeder, hesabı `INSTAGRAM_ACCOUNTS`'a ekler ve scraper'ı yeniden başlatır.
+Tarayıcıdan **çıkış yapma** — çıkış yaparsan sessionid geçersiz olur. Süresi dolarsa aynı adımları tekrarla.
